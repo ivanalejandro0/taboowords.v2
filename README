@@ -1,0 +1,32 @@
+== Que es TabooWords? ==
+Versión informática del juego de tablero en grupos en el cual se debe explicar una palabra a tus compañeros sin usar las palabras dadas como taboo. (Creo que originalmente fue creado y comercializado por Hasbro)
+
+== Como jugar? ==
+Para quien no conozca el juego original, funciona mas o menos de la siguiente manera (aunque se puede jugar de varias formas):
+* Se dividen las personas en 2 equipos.
+* Cada equipo tiene un turno y 60 segundos para hacerse entender.
+* La persona elegida por el equipo de turno tiene que intentar hacerle a entender a sus compañeros la palabra dada como consigna sin decir las 5 palabras dadas como tabúes.
+* Del equipo contrario tiene que haber una persona controlando que al parafrasear no se diga ninguna las palabras prohibidas. (como restricción adicional se puede prohibir usar las palabras similares o de la misma familia que las de la tarjeta)
+* Si se adivina la palabra consigna el equipo gana la tarjeta, sino la gana el equipo contrario.
+
+Por ejemplo:
+Como harias para que tu equipo diga LAPICERA?
+No podes decir: Birome, Escribir, Papel, Tinta, Lápiz
+
+Uno podria decir: //útil escolar usado para anotar cosas.//
+
+== Como iniciar el juego ==
+
+Requerimientos:
+* python
+* Qt 4.8 (maybe called libqt4-dev)
+* PySide (python-pyside)
+* PySide tools (pyside-tools)
+
+Se debe compilar la interfaz grafica: `python setup.py build_qt`
+El comando necesario para iniciar el juego es: `python taboowords.py`
+
+== Desarrollo ==
+
+Hay una version funcional del juego en: https://bitbucket.org/ivanalejandro0/taboowords/src.
+Esta es una nueva version que busca mas claridad en la interfaz grafica, facilidad de uso y una mejor calidad en el codigo.
