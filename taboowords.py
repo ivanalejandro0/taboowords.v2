@@ -34,7 +34,7 @@ class TabooWords(QtGui.QMainWindow, object):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
 
-        self._words_model = WordsModel('words.db')
+        self._words_model = WordsModel('cards.db')
 
         self.ui = Ui_TabooWords()
         self.ui.setupUi(self)
