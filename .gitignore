@@ -1,3 +1,7 @@
+# Qt Compiled files
+*_rc.py
+ui_*.py
+
 *.py[cod]
 
 # C extensions
