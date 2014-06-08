@@ -18,13 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with TabooWords.  If not, see <http://www.gnu.org/licenses/>.
 
+import signal
 import sys
 
-try:
-    from PySide import QtGui
-except ImportError:
-    print "PySide (Qt4 bindings for Python) is required for this application."
-    sys.exit()
+from PySide import QtCore, QtGui
 
 from wordsmodel import WordsModel
 from ui.ui_taboowords import Ui_TabooWords
@@ -34,27 +31,46 @@ class TabooWords(QtGui.QMainWindow, object):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
 
-        self._words_model = WordsModel('cards.db')
-
         self.ui = Ui_TabooWords()
         self.ui.setupUi(self)
 
+        self._words_model = WordsModel('cards.db')
+
         msj = "Se cargaron %s palabras." % self._words_model.contarPalabras()
         self.ui.statusbar.showMessage(msj)
+
+        self._current_card = None
+        self._cards_remaining = 0
+        self._cards_win = 0
+        self._cards_lose = 0
+
+        self._score_A = 0
+        self._score_B = 0
 
         self._setup_connections()
         self._set_rules()
 
     def _setup_connections(self):
-        self.ui.pbWin.clicked.connect(self._load_card)
-        self.ui.pbSkip.clicked.connect(self._load_card)
+        # implicit connections:
+        # self.ui.pbWin.clicked.connect(self._load_card)
+        # self.ui.pbSkip.clicked.connect(self._load_card)
+        self.ui.pbNewCardsRound.clicked.connect(self._on_new_round)
 
         self.ui.pbTimerStart.clicked.connect(self.ui.lcdTimer.start)
         self.ui.pbTimerPause.clicked.connect(self.ui.lcdTimer.pause)
         self.ui.pbTimerReset.clicked.connect(self.ui.lcdTimer.reset)
 
+        self.ui.lcdTimer.out_of_time.connect(self._out_of_time)
+
+    def _out_of_time(self):
+        self.ui.pbWin.setEnabled(False)
+        self.ui.pbSkip.setEnabled(False)
+        self.ui.qteCard.setHtml("<strong>El tiempo se ha terminado.</strong>")
+
     def _load_card(self):
         taboo_card = self._words_model.jugar()
+        self._current_card = taboo_card
+
         word = u'<u>Palabra:</u> <strong>{0}</strong><br><br>\n'
         card = word.format(taboo_card['palabra'])
 
@@ -66,6 +82,81 @@ class TabooWords(QtGui.QMainWindow, object):
         html = u'<h3>{0}{1}</h3>'.format(card, taboos)
 
         self.ui.qteCard.setHtml(html)
+        self._update_remaining_cards()
+
+    def _update_remaining_cards(self):
+        if self._cards_remaining > 0:
+            self._cards_remaining -= 1
+            self.ui.lcdRemainingCards.display(self._cards_remaining)
+        else:
+            self.ui.pbWin.setEnabled(False)
+            self.ui.pbSkip.setEnabled(False)
+            self.ui.qteCard.setHtml("<strong>Fin de la partida.</strong>")
+
+    @QtCore.Slot()
+    def on_pbWin_clicked(self):
+        self._cards_win += 1
+        word = self._current_card
+        if word is not None:
+            item = QtGui.QTableWidgetItem(word['palabra'])
+            details = 'Tabues: '+', '.join(word['tabues'])
+            item.setToolTip(details)
+            self.ui.twGuessedCards.setItem(self._cards_win-1, 0, item)
+
+        cards = int(self.ui.leGuessedCards.text())
+        cards += 1
+        self.ui.leGuessedCards.setText(str(cards))
+        self._load_card()
+
+    @QtCore.Slot()
+    def on_pbSkip_clicked(self):
+        self._cards_lose += 1
+        word = self._current_card
+        if word is not None:
+            item = QtGui.QTableWidgetItem(word['palabra'])
+            details = 'Tabues: '+', '.join(word['tabues'])
+            item.setToolTip(details)
+            self.ui.twSkippedCards.setItem(self._cards_lose-1, 0, item)
+
+        cards = int(self.ui.leSkippedCards.text())
+        cards += 1
+        self.ui.leSkippedCards.setText(str(cards))
+        self._load_card()
+
+    @QtCore.Slot()
+    def _on_new_round(self):
+        # reset game status
+        self._cards_remaining = 5
+        self.ui.lcdRemainingCards.display(self._cards_remaining)
+
+        # clear win/skip tables:
+        for row in xrange(5):
+            self.ui.twSkippedCards.setItem(row, 0, QtGui.QTableWidgetItem(''))
+            self.ui.twGuessedCards.setItem(row, 0, QtGui.QTableWidgetItem(''))
+
+        self._current_card = None
+        self._cards_win = 0
+        self._cards_lose = 0
+
+        self.ui.leSkippedCards.setText('0')
+        self.ui.leGuessedCards.setText('0')
+
+        self.ui.pbWin.setEnabled(True)
+        self.ui.pbSkip.setEnabled(True)
+        self.ui.pbProcessRound.setEnabled(True)
+
+        self._load_card()
+
+    @QtCore.Slot()
+    def on_pbProcessRound_clicked(self):
+        if self.ui.rbPlayingA.isChecked():
+            self._score_A += self._cards_win
+            self.ui.lcdScoreTeamA.display(self._score_A)
+        else:
+            self._score_B += self._cards_win
+            self.ui.lcdScoreTeamB.display(self._score_B)
+
+        self.ui.pbProcessRound.setEnabled(False)
 
     def _set_rules(self):
         # TODO: load rules from file
@@ -92,6 +183,9 @@ class TabooWords(QtGui.QMainWindow, object):
 
 
 def main():
+    # Ensure that the application quits using CTRL-C
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     app = QtGui.QApplication(sys.argv)
     prog = TabooWords()
     prog.show()

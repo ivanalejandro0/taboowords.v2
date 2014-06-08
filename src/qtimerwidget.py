@@ -28,6 +28,8 @@ except ImportError:
 
 
 class QTimerWidget(QtGui.QLCDNumber):
+    out_of_time = QtCore.Signal()
+
     def __init__(self, parent=None):
         QtGui.QLCDNumber.__init__(self, parent)
 
@@ -62,6 +64,7 @@ class QTimerWidget(QtGui.QLCDNumber):
                 self._set_lcd_color(warning=True)
         else:
             self._timer.stop()
+            self.out_of_time.emit()
 
     def _set_lcd_color(self, warning=False):
         color = QtCore.Qt.black
